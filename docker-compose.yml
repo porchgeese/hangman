@@ -1,0 +1,10 @@
+version: '2.0'
+services:
+  db:
+    image: postgres:9.6-alpine
+    environment:
+      POSTGRES_PASSWORD: "admin"
+      POSTGRES_USER: "admin"
+      POSTGRES_DB: "test"
+    ports:
+      - 5432:5432
