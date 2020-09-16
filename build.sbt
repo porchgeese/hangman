@@ -1,11 +1,42 @@
 import Dependencies._
 import sbt.Keys.libraryDependencies
+import sbt.addCompilerPlugin
 
-import language.higherKinds
 ThisBuild / scalaVersion := "2.13.3"
 ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / organization := "com.example"
+ThisBuild / organization := "pt.porchgeese"
 ThisBuild / organizationName := "example"
+
+parallelExecution in IntegrationTest := true
+
+lazy val shared = (project in file("shared"))
+  .settings(
+    name := "shared",
+    libraryDependencies ++= (http4s ++ doobie ++ circe ++ cats ++ scalatest ++ logbackAndLog4s ++ fs2Kafka ++ pureConfig ++ flyway ++ dockerTest),
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings"
+    ),
+    buildInfoPackage := "pt.porchgeese.hangman",
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
+    Defaults.itSettings
+  )
+  .enablePlugins(BuildInfoPlugin)
+  .configs(Test, IntegrationTest)
+
+lazy val hangman = (project in file("hangman"))
+  .settings(
+    name := "hangman",
+    libraryDependencies ++= (http4s ++ doobie ++ circe ++ cats ++ scalatest ++ logbackAndLog4s ++ fs2Kafka ++ pureConfig ++ flyway ++ dockerTest),
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings"
+    ),
+    buildInfoPackage := "pt.porchgeese.hangman",
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
+    Defaults.itSettings
+  )
+  .enablePlugins(BuildInfoPlugin)
+  .configs(Test, IntegrationTest)
+  .dependsOn(shared)
 
 lazy val streaming = (project in file("streaming"))
   .settings(
@@ -13,9 +44,14 @@ lazy val streaming = (project in file("streaming"))
     libraryDependencies ++= (doobie ++ circe ++ cats ++ scalatest ++ logbackAndLog4s ++ fs2Kafka),
     scalacOptions ++= Seq(
       "-Xfatal-warnings"
-    )
+    ),
+    Defaults.itSettings,
+    buildInfoPackage := "pt.porchgeese.hangman",
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
   )
-  .dependsOn(common)
+  .enablePlugins(BuildInfoPlugin)
+  .configs(Test, IntegrationTest)
+  .dependsOn(hangman)
 
 lazy val http = (project in file("http"))
   .settings(
@@ -23,15 +59,11 @@ lazy val http = (project in file("http"))
     libraryDependencies ++= (http4s ++ doobie ++ circe ++ cats ++ scalatest ++ logbackAndLog4s ++ fs2Kafka),
     scalacOptions ++= Seq(
       "-Xfatal-warnings"
-    )
+    ),
+    buildInfoPackage := "pt.porchgeese.hangman",
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
+    Defaults.itSettings
   )
-  .dependsOn(common)
-
-lazy val common = (project in file("common"))
-  .settings(
-    name := "common",
-    libraryDependencies ++= (http4s ++ doobie ++ circe ++ cats ++ scalatest ++ logbackAndLog4s ++ fs2Kafka ++ pureConfig),
-    scalacOptions ++= Seq(
-      "-Xfatal-warnings"
-    )
-  )
+  .enablePlugins(BuildInfoPlugin)
+  .configs(Test, IntegrationTest)
+  .dependsOn(hangman)
