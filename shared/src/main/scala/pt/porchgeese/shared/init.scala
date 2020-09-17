@@ -16,7 +16,8 @@ import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.server.Server
 import org.http4s.server.blaze.BlazeServerBuilder
-import pt.porchgeese.shared.config.{ConsumerConfig, DatabaseConfig, HttpClientConfig, InitConfigs, ServerConfig, ThreadPoolConfig}
+import config.{ConsumerConfig, DatabaseConfig, HttpClientConfig, InitConfigs, ServerConfig, ThreadPoolConfig}
+import config.{ConsumerConfig, DatabaseConfig, HttpClientConfig, InitConfigs, ServerConfig, ThreadPoolConfig}
 import pureconfig._
 import pureconfig.generic.auto._
 

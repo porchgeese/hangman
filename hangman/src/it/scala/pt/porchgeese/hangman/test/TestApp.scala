@@ -1,13 +1,13 @@
-package microservice.test
+package pt.porchgeese.hangman.test
 
 import cats.effect.{Clock, IO, Resource}
-import doobie.util.transactor.Transactor
-import pt.porchgeese.shared.init
-import pt.porchgeese.shared.config.{DatabaseConfig, ThreadPoolConfig}
-import pt.porchgeese.hangman.services.MatchupService
-import microservice.test.test.ContainerPort
+import doobie.Transactor
 import pt.porchgeese.hangman.database.MatchupRepository
 import pt.porchgeese.hangman.services.{IdGeneratorService, MatchupService}
+import pt.porchgeese.shared.config.{DatabaseConfig, ThreadPoolConfig}
+import pt.porchgeese.shared.init
+import pt.porchgeese.shared.test.docker.ContainerPort
+import pt.porchgeese.shared.test.docker
 
 object TestApp {
   case class TestApp(t: Transactor[IO], matchupService: MatchupService)
@@ -17,12 +17,12 @@ object TestApp {
       ex <- init.fixedThreadPoolExecutor[IO](ThreadPoolConfig(10))
       cs = IO.contextShift(ex)
       config       <- Resource.liftF(init.config[IO])
-      dockerClient <- test.dockerClient
-      dbContainer  <- test.database(dockerClient, 8080)
+      dockerClient <- docker.dockerClient
+      dbContainer  <- docker.database(dockerClient, 8080)
       db <- init.hikaryTranscator[IO](
         DatabaseConfig(ThreadPoolConfig(1), "org.postgresql.Driver", s"jdbc:postgresql://127.0.0.1:${dbContainer(ContainerPort(5432)).head.port}/test", "admin", "admin", Nil)
       )(cs, implicitly, implicitly)
-      _ <- Resource.liftF(test.dbHealthCheck(db))
+      _ <- Resource.liftF(docker.dbHealthCheck(db))
       _ <- Resource.liftF(init.migrations[IO](config.databases.all.values.toList.flatMap(_.migrations).distinct, db))
       matchupRepository = new MatchupRepository()
       idGenerator       = new IdGeneratorService

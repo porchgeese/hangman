@@ -4,12 +4,12 @@ import cats.MonadError
 import cats.effect.{Async, ConcurrentEffect, ContextShift, IO, Resource, Sync, Timer}
 import cats.implicits._
 import cats.effect._
-import pt.porchgeese.shared.init.{httpClient, _}
-import pt.porchgeese.shared.InitHashMap
 import org.http4s.{HttpApp, HttpRoutes}
 import org.http4s.implicits._
 import pt.porchgeese.hangman.http.healthcheck.HealthCheckService
+import pt.porchgeese.shared.InitHashMap
 import pt.porchgeese.shared.http.MetaMicroService
+import pt.porchgeese.shared.init._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 package object init {

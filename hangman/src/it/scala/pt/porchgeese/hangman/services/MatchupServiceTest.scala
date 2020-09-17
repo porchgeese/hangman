@@ -1,14 +1,14 @@
-package microservice.services
+package pt.porchgeese.hangman.services
 
 import java.util.UUID
 
 import cats.effect.IO
 import pt.porchgeese.hangman.domain.PlayerId
 import pt.porchgeese.hangman.services.MatchupService.MatchupFound
-import microservice.test.TestApp
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import pt.porchgeese.hangman.domain.{MatchupState, PlayerId}
+import pt.porchgeese.hangman.test.TestApp
 
 class MatchupServiceTest extends AnyFreeSpec with Matchers {
   "The matchup service" - {

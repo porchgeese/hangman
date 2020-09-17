@@ -1,4 +1,4 @@
-package microservice.test
+package pt.porchgeese.shared.test
 
 import java.io.Closeable
 
@@ -14,9 +14,10 @@ import com.github.dockerjava.api.model.{HostConfig, ExposedPort => ClientExposed
 import com.github.dockerjava.core.DockerClientImpl
 import doobie.util.transactor.Transactor
 import doobie.implicits._
+import pt.porchgeese.shared.Foo
 
 import scala.jdk.CollectionConverters._
-object test {
+object docker {
   case class ContainerId(value: String) extends AnyVal
   case class ContainerPort(port: Int)
   case class ExposedPort(port: Int)
