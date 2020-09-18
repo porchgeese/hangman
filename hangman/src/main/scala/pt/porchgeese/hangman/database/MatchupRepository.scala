@@ -1,10 +1,7 @@
 package pt.porchgeese.hangman.database
 
-import cats.effect.{Clock, IO}
 import doobie.util.update.Update
-import doobie.{ConnectionIO, FC}
-import pt.porchgeese.hangman.domain.MatchupState.{MatchupState, Paired, Waiting}
-import pt.porchgeese.hangman.domain.PlayerId
+import doobie.ConnectionIO
 import doobie.implicits._
 import pt.porchgeese.hangman.domain.MatchupState.{MatchupState, Paired, Waiting}
 import pt.porchgeese.hangman.domain.{Matchup, MatchupId, PlayerId}
@@ -34,6 +31,16 @@ class MatchupRepository {
       .query[MatchupId]
       .option
   }
+
+  def findMatchup(id: MatchupId): ConnectionIO[Option[Matchup]] =
+    sql"""
+         |SELECT id,player, state, player2,createdAt
+         |FROM matchup
+         |WHERE id = ${id}
+         |;
+         |""".stripMargin
+      .query[Matchup]
+      .option
 
   def pairPlayerWithMatchup(p: PlayerId, m: MatchupId): ConnectionIO[Unit] = {
     val paired: MatchupState = Paired

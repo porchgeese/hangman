@@ -40,7 +40,7 @@ object Dependencies {
   )
 
   val dockerTest = List(
-    "com.github.docker-java" % "docker-java" % "3.2.5",
+    "com.github.docker-java" % "docker-java"                       % "3.2.5",
     "com.github.docker-java" % "docker-java-transport-httpclient5" % "3.2.5"
   )
 
@@ -61,6 +61,12 @@ object Dependencies {
 
   val flyway = List(
     "org.flywaydb" % "flyway-core" % "5.1.4"
+  )
+
+  val refined = List(
+    "eu.timepit" %% "refined"            % "0.9.15",
+    "eu.timepit" %% "refined-cats"       % "0.9.15",
+    "eu.timepit" %% "refined-pureconfig" % "0.9.15"
   )
 
 }

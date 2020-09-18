@@ -12,10 +12,10 @@ case class Matchup(id: MatchupId, player: PlayerId, state: MatchupState, player2
 
 object MatchupState {
   sealed trait MatchupState
-  case object Waiting   extends MatchupState
-  case object Cancelled extends MatchupState
-  case object Paired    extends MatchupState
-  case object Playing   extends MatchupState
+  final case object Waiting   extends MatchupState
+  final case object Cancelled extends MatchupState
+  final case object Paired    extends MatchupState
+  final case object Playing   extends MatchupState
 
   implicit val writer: Put[MatchupState] = Put[String].tcontramap {
     case Waiting   => "WAITING"
@@ -23,11 +23,19 @@ object MatchupState {
     case Paired    => "PAIRED"
     case Playing   => "PLAYING"
   }
+
+  implicit val reader: Read[MatchupState] = Read[String].map {
+    case "WAITING"   => Waiting
+    case "CANCELLED" => Cancelled
+    case "PAIRED"    => Paired
+    case "PLAYING"   => Playing
+  }
 }
 
 object Matchup {
   def newMatchup(id: MatchupId, playerId: PlayerId, currentTime: Long): Matchup = Matchup(id, playerId, MatchupState.Waiting, None, currentTime)
   implicit val writer: doobie.Write[Matchup]                                    = Write[(MatchupId, PlayerId, MatchupState, Option[PlayerId], Long)].contramap(Matchup.unapply(_).get)
+  implicit val reader: doobie.Read[Matchup]                                     = Read[(MatchupId, PlayerId, MatchupState, Option[PlayerId], Long)].map((Matchup.apply _).tupled)
 }
 
 case class MatchupId(v: UUID) extends AnyVal

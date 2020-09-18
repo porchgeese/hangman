@@ -3,47 +3,21 @@ package pt.porchgeese.hangman.database
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.util.update.Update
-import pt.porchgeese.hangman.domain.MatchupState.{MatchupState, Paired, Waiting}
-import pt.porchgeese.hangman.domain.{Matchup, MatchupId, PlayerId}
-
+import pt.porchgeese.hangman.domain.{Game, GameId}
 class GameRepository {
-  def createMatchup(m: Matchup): ConnectionIO[Unit] = {
+  def creatGame(m: Game): ConnectionIO[Unit] = {
     val query =
-      s"""INSERT INTO matchup(id, player, state, player2, createdAt)
-         |VALUES (?,?,?,?,?)
+      s"""INSERT INTO game(id, matchupId, state, createdAt)
+         |VALUES (?,?,?,?)
          |""".stripMargin
-    Update[Matchup](query).toUpdate0(m).run.flatMap(database.validateSingleInsert)
+    Update[Game](query).toUpdate0(m).run.flatMap(database.validateSingleInsert)
   }
 
-  def findAvailableMatchupWithLock(): ConnectionIO[Option[MatchupId]] = {
-    val waiting: MatchupState = Waiting
+  def findGame(gameId: GameId): doobie.ConnectionIO[Option[Game]] =
     sql"""
-         |SELECT id
-         |FROM matchup
-         |WHERE
-         |  player2 IS NULL AND
-         |  state=${waiting}
-         |ORDER BY createdAt asc
-         |FOR UPDATE SKIP LOCKED
-         |LIMIT 1
-         |;
-         |""".stripMargin
-      .query[MatchupId]
-      .option
-  }
-
-  def pairPlayerWithMatchup(p: PlayerId, m: MatchupId): ConnectionIO[Unit] = {
-    val paired: MatchupState = Paired
-    val query =
-      sql"""
-         |UPDATE matchup
-         |SET
-         |  state=${paired},
-         |  player2=${p}
-         |WHERE
-         |  id=$m;
-         |""".stripMargin
-    query.update.run.flatMap(database.validateSingleUpdate)
-  }
+       |SELECT id, matchupId, state, createdAt
+       |FROM game
+       |WHERE id=${gameId}
+       |""".stripMargin.query[Game].option
 
 }

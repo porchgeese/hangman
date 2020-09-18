@@ -2,15 +2,16 @@ package pt.porchgeese.hangman.test
 
 import cats.effect.{Clock, IO, Resource}
 import doobie.Transactor
-import pt.porchgeese.hangman.database.MatchupRepository
-import pt.porchgeese.hangman.services.{IdGeneratorService, MatchupService}
+import pt.porchgeese.hangman.database.{GameRepository, GameWordRepository, MatchupRepository, PlayerRepository}
+import pt.porchgeese.hangman.domain.{WhiteSpaceCharacter, WordCharacter}
+import pt.porchgeese.hangman.services.{GameService, GameWordService, IdGeneratorService, MatchupService, PlayerService}
 import pt.porchgeese.shared.config.{DatabaseConfig, ThreadPoolConfig}
 import pt.porchgeese.shared.init
 import pt.porchgeese.shared.test.docker.ContainerPort
 import pt.porchgeese.shared.test.docker
 
 object TestApp {
-  case class TestApp(t: Transactor[IO], matchupService: MatchupService)
+  case class TestApp(t: Transactor[IO], matchupService: MatchupService, playerService: PlayerService, gameService: GameService, gameWordService: GameWordService)
 
   def withApp(testFunc: TestApp => IO[Any]): Unit =
     (for {
@@ -24,9 +25,20 @@ object TestApp {
       )(cs, implicitly, implicitly)
       _ <- Resource.liftF(docker.dbHealthCheck(db))
       _ <- Resource.liftF(init.migrations[IO](config.databases.all.values.toList.flatMap(_.migrations).distinct, db))
-      matchupRepository = new MatchupRepository()
-      idGenerator       = new IdGeneratorService
-      clock             = Clock.create[IO]
-      app               = TestApp(db, new MatchupService(matchupRepository, db, idGenerator, clock))
+      validWordCharacters = (('a' to 'z').toSet ++ ('A' to 'Z').toSet).map(WordCharacter)
+      validWhitescpace    = Set(' ').map(WhiteSpaceCharacter)
+      matchupRepository   = new MatchupRepository()
+      playerRepository    = new PlayerRepository()
+      gameRepository      = new GameRepository()
+      gameWordRepo        = new GameWordRepository()
+      idGenerator         = new IdGeneratorService
+      clock               = Clock.create[IO]
+      app = TestApp(
+        db,
+        new MatchupService(matchupRepository, db, idGenerator, clock),
+        new PlayerService(playerRepository, db, idGenerator, clock),
+        new GameService(gameRepository, matchupRepository, db, idGenerator, clock),
+        new GameWordService(gameRepository, gameWordRepo, matchupRepository, validWhitescpace, validWordCharacters, db, idGenerator, clock)
+      )
     } yield app).use(app => testFunc(app)).unsafeRunSync()
 }

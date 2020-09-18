@@ -1,16 +1,15 @@
 package pt.porchgeese.hangman.services
 
 import cats.effect.{Clock, IO}
-import doobie.{ConnectionIO, FC}
-import doobie.util.transactor.Transactor
-import pt.porchgeese.hangman.domain.PlayerId
-import doobie.implicits._
 import cats.implicits._
-
-import scala.concurrent.duration._
-import MatchupService.{MatchupCreated, MatchupFound}
+import doobie.implicits._
+import doobie.util.transactor.Transactor
+import doobie.{ConnectionIO, FC}
 import pt.porchgeese.hangman.database.MatchupRepository
 import pt.porchgeese.hangman.domain.{Matchup, MatchupId, PlayerId}
+import pt.porchgeese.hangman.services.MatchupService.{MatchupCreated, MatchupFound}
+
+import scala.concurrent.duration._
 class MatchupService(
     matchupRepo: MatchupRepository,
     db: Transactor[IO],

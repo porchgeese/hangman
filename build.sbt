@@ -6,7 +6,7 @@ ThisBuild / scalaVersion := "2.13.3"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "pt.porchgeese"
 ThisBuild / organizationName := "example"
-ThisBuild / scalacOptions := Seq("-Xfatal-warnings")
+ThisBuild / scalacOptions := Seq("-Xfatal-warnings","-deprecation")
 ThisBuild / parallelExecution in IntegrationTest := true
 
 lazy val shared = (project in file("shared"))
@@ -33,7 +33,7 @@ lazy val hangman = (project in file("hangman"))
   .configs(IntegrationTest)
   .settings(
     name := "hangman",
-    libraryDependencies ++= (http4s ++ doobie ++ circe ++ cats ++ scalatest ++ logbackAndLog4s ++ fs2Kafka ++ pureConfig ++ flyway),
+    libraryDependencies ++= (http4s ++ doobie ++ circe ++ cats ++ scalatest ++ logbackAndLog4s ++ fs2Kafka ++ pureConfig ++ flyway ++ refined),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
     Defaults.itSettings
   )
