@@ -1,6 +1,5 @@
 package pt.porchgeese.hangman
 
-import java.util
 import java.util.UUID
 
 import cats.data.NonEmptyList

@@ -2,9 +2,8 @@ package pt.porchgeese.hangman.domain
 
 import java.util.UUID
 
-import doobie.{Put, Read, Write}
+import doobie.{Put, Read}
 import doobie.postgres.implicits._
-import doobie.postgres._
 
 case class Player(id: PlayerId, name: String, createdAt: Long)
 object Player {

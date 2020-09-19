@@ -1,14 +1,9 @@
 package pt.porchgeese.shared.test
 
-import java.io.Closeable
-
 import cats.effect.{IO, Resource}
 import com.github.dockerjava.core.DefaultDockerClientConfig
-import com.github.dockerjava.core.DockerClientConfig
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
-import com.github.dockerjava.transport.DockerHttpClient
 import com.github.dockerjava.api.DockerClient
-import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.model.{HostConfig, ExposedPort => ClientExposedPort}
 import com.github.dockerjava.core.DockerClientImpl
@@ -37,7 +32,7 @@ object docker {
           Resource.make(IO.delay(DockerClientImpl.getInstance(config, httpClient)))(client => IO.delay(client.close))
       }
 
-  def database(dockerCli: DockerClient, port: Long): Resource[IO, Map[ContainerPort, List[ExposedPort]]] =
+  def database(dockerCli: DockerClient): Resource[IO, Map[ContainerPort, List[ExposedPort]]] =
     startContainer(dockerCli)(
       "postgres:9.6-alpine",
       List("POSTGRES_PASSWORD=admin", "POSTGRES_USER=admin", "POSTGRES_DB=test"),
@@ -59,8 +54,8 @@ object docker {
       exposedPorts: List[Int]
   ): Resource[IO, Map[ContainerPort, List[ExposedPort]]] = {
     def removeContainer(id: ContainerId): Unit = {
-      dockerCli.killContainerCmd(id.value).exec()
-      dockerCli.removeContainerCmd(id.value).exec()
+      val _ = dockerCli.killContainerCmd(id.value).exec()
+      val _ = dockerCli.removeContainerCmd(id.value).exec()
     }
     Resource
       .make(
@@ -87,7 +82,7 @@ object docker {
         case (hook, container, _) =>
           IO.delay {
             removeContainer(container)
-            Runtime.getRuntime.removeShutdownHook(hook)
+            val _ = Runtime.getRuntime.removeShutdownHook(hook)
           }
       }
       .map(result => result._3.toList.map { case (k, v) => ContainerPort(k) -> v.map(ExposedPort) }.toMap)

@@ -2,7 +2,7 @@ package pt.porchgeese.shared
 
 import java.util.concurrent.Executors
 
-import cats.{ApplicativeError, Defer, MonadError}
+import cats.MonadError
 import cats.effect._
 import cats.implicits._
 import doobie.Transactor
@@ -16,8 +16,7 @@ import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.server.Server
 import org.http4s.server.blaze.BlazeServerBuilder
-import config.{ConsumerConfig, DatabaseConfig, HttpClientConfig, InitConfigs, ServerConfig, ThreadPoolConfig}
-import config.{ConsumerConfig, DatabaseConfig, HttpClientConfig, InitConfigs, ServerConfig, ThreadPoolConfig}
+import config._
 import pureconfig._
 import pureconfig.generic.auto._
 

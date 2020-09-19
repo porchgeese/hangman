@@ -34,7 +34,7 @@ class GameWordServiceTest extends AnyFreeSpec with Matchers {
         player2 <- app.playerService.createPlayer("player02")
         matchup <- app.matchupService.createMatchup(player1.id)
         _       <- app.matchupService.matchupPlayer(player2.id)
-        game    <- app.gameService.createGame(matchup.id).map(_.getOrElse(fail("game not created")))
+        _       <- app.gameService.createGame(matchup.id).map(_.getOrElse(fail("game not created")))
         word    <- app.gameWordService.addGameWord(player1.id, GameId(UUID.randomUUID()), "aValidWord")
       } yield {
         val error = word.left.getOrElse(fail("word should not have been created"))
@@ -90,7 +90,7 @@ class GameWordServiceTest extends AnyFreeSpec with Matchers {
         whiteSpaceBegining <- app.gameWordService.addGameWord(player1.id, game.id, " whiteSpaceBegin")
         whiteSpaceBoth     <- app.gameWordService.addGameWord(player1.id, game.id, " whiteSpace ")
         invalidCharacters  <- app.gameWordService.addGameWord(player1.id, game.id, "white$pace")
-        multipleWhiteSpace  <- app.gameWordService.addGameWord(player1.id, game.id, "whites  pace")
+        multipleWhiteSpace <- app.gameWordService.addGameWord(player1.id, game.id, "whites  pace")
       } yield {
         val whiteSpaceEndErr = whiteSpaceEnd.left.getOrElse(fail("should not accept invalid words"))
         whiteSpaceEndErr shouldBe NonEmptyList.of(InvalidWord(NonEmptyList.of(GameWordValidations.EndsWithWhitespace)))

@@ -1,7 +1,6 @@
 package pt.porchgeese.hangman.validations
 
 import cats.data.{NonEmptyList, Validated}
-import pt.porchgeese.hangman.domain.GameWord
 
 object Validations {
   def exits[A](option: Option[A]): Validated[Unit, A]               = Validated.fromOption(option, ())

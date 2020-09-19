@@ -3,7 +3,6 @@ package pt.porchgeese.hangman.http
 import cats.MonadError
 import cats.effect.{Async, ConcurrentEffect, ContextShift, IO, Resource, Sync, Timer}
 import cats.implicits._
-import cats.effect._
 import org.http4s.{HttpApp, HttpRoutes}
 import org.http4s.implicits._
 import pt.porchgeese.hangman.http.healthcheck.HealthCheckService
@@ -12,13 +11,13 @@ import pt.porchgeese.shared.http.MetaMicroService
 import pt.porchgeese.shared.init._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
-package object init {
+object init {
   case class ServiceConfig()
 
   case class AppAndServices[F[_]](
       external: Externals[F],
       routes: HttpApp[F]
-  ) { private def copy(): Unit = () }
+  ) { def copy(): Unit = () }
 
   def serviceConfig[F[_]](implicit ME: MonadError[F, Throwable]): F[ServiceConfig] =
     ME.fromEither(
@@ -46,9 +45,8 @@ package object init {
 
     } yield Externals[F](InitHashMap.default(httpClient), InitHashMap.default(dbConnection), InitHashMap.default(threadPool), config)
 
-  def services(externals: Externals[IO])(implicit contextShift: ContextShift[IO], timer: Timer[IO]): Resource[IO, AppAndServices[IO]] =
+  def services(externals: Externals[IO])(implicit contextShift: ContextShift[IO]): Resource[IO, AppAndServices[IO]] =
     for {
-      config             <- serviceConfig[IO].to[Resource[IO, *]]
       healthCheckService <- Resource.pure[IO, HealthCheckService](new HealthCheckService(externals.dbConnections))
       healthCheckRoutes  <- Resource.pure[IO, MetaMicroService[IO]](new MetaMicroService[IO](healthCheckService.health))
       routes             <- Resource.pure[IO, HttpRoutes[IO]](healthCheckRoutes.routes)

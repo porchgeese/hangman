@@ -19,7 +19,8 @@ object TestApp {
       cs = IO.contextShift(ex)
       config       <- Resource.liftF(init.config[IO])
       dockerClient <- docker.dockerClient
-      dbContainer  <- docker.database(dockerClient, 8080)
+      dbContainer  <- docker.
+        database(dockerClient)
       db <- init.hikaryTranscator[IO](
         DatabaseConfig(ThreadPoolConfig(1), "org.postgresql.Driver", s"jdbc:postgresql://127.0.0.1:${dbContainer(ContainerPort(5432)).head.port}/test", "admin", "admin", Nil)
       )(cs, implicitly, implicitly)
@@ -40,5 +41,5 @@ object TestApp {
         new GameService(gameRepository, matchupRepository, db, idGenerator, clock),
         new GameWordService(gameRepository, gameWordRepo, matchupRepository, validWhitescpace, validWordCharacters, db, idGenerator, clock)
       )
-    } yield app).use(app => testFunc(app)).unsafeRunSync()
+    } yield app).use(app => testFunc(app)).void.unsafeRunSync()
 }

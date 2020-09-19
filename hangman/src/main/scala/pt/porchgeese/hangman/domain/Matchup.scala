@@ -4,9 +4,7 @@ import java.util.UUID
 
 import doobie.{Put, Read, Write}
 import MatchupState.MatchupState
-import doobie.postgres._
 import doobie.postgres.implicits._
-import fs2.kafka.Timestamp
 
 case class Matchup(id: MatchupId, player: PlayerId, state: MatchupState, player2: Option[PlayerId], createdAt: Long)
 
