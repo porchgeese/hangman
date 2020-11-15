@@ -7,7 +7,7 @@ import org.http4s.{HttpApp, HttpRoutes}
 import org.http4s.implicits._
 import pt.porchgeese.hangman.http.healthcheck.HealthCheckService
 import pt.porchgeese.shared.InitHashMap
-import pt.porchgeese.shared.http.MetaMicroService
+import pt.porchgeese.shared.http.MetaRoutes
 import pt.porchgeese.shared.init._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
@@ -42,13 +42,12 @@ object init {
 
       threadPoolConfig <- Resource.liftF(ME.fromEither(config.executors.getDefault.leftMap(handleInitError("threadPool"))))
       threadPool       <- fixedThreadPoolExecutor[F](threadPoolConfig)
-
     } yield Externals[F](InitHashMap.default(httpClient), InitHashMap.default(dbConnection), InitHashMap.default(threadPool), config)
 
   def services(externals: Externals[IO])(implicit contextShift: ContextShift[IO]): Resource[IO, AppAndServices[IO]] =
     for {
       healthCheckService <- Resource.pure[IO, HealthCheckService](new HealthCheckService(externals.dbConnections))
-      healthCheckRoutes  <- Resource.pure[IO, MetaMicroService[IO]](new MetaMicroService[IO](healthCheckService.health))
+      healthCheckRoutes  <- Resource.pure[IO, MetaRoutes[IO]](new MetaRoutes[IO](healthCheckService.health))
       routes             <- Resource.pure[IO, HttpRoutes[IO]](healthCheckRoutes.routes)
     } yield AppAndServices[IO](externals, routes.orNotFound)
 

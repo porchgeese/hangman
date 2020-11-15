@@ -12,7 +12,7 @@ import pt.porchgeese.hangman.database.{GameRepository, GameWordRepository, Match
 import pt.porchgeese.hangman.domain.{Game, GameCharacter, GameId, GameWord, GameWordId, Matchup, PlayerId, WhiteSpaceCharacter, WordCharacter}
 import pt.porchgeese.hangman.services.GameWordService.GameWordServiceError
 import pt.porchgeese.hangman.validations.GameWordValidations.GameWordValidations
-import pt.porchgeese.hangman.validations.{GameWordValidations, MatchupValidations, Validations}
+import pt.porchgeese.hangman.validations.{GameWordValidations, Validations}
 
 import scala.concurrent.duration._
 
@@ -91,7 +91,7 @@ object GameWordService {
       .andThen {
         case (_, matchup) =>
           (
-            MatchupValidations.playerMatches(gameWord.playerId, matchup).leftMap(_ => PlayerDoesNotMatch).toValidatedNel,
+            Validations.playerMatches(gameWord.playerId, matchup).leftMap(_ => PlayerDoesNotMatch).toValidatedNel,
             GameWordValidations.noMoreSubmissions(gameWords).leftMap(_ => OnlyOneGameWordPerGame).toValidatedNel
           ).mapN((_, _) => gameWord)
       }

@@ -1,6 +1,9 @@
+import sbt.Keys.resolvers
 import sbt._
 
+
 object Dependencies {
+
   val CatsVersion       = "2.0.0"
   val CatsEffectVersion = "2.2.0"
   val ScalaTestVersion  = "3.2.0"
@@ -10,6 +13,7 @@ object Dependencies {
   val Log4CatsVersion   = "1.1.1"
   val Log4sVersion      = "1.8.2"
   val pureConfigVersion = "0.13.0"
+  val docke4sVersion    = "0.0.1-SNAPSHOT"
 
   val http4s = List(
     "org.http4s" %% "http4s-circe"        % Http4sVersion,
@@ -39,10 +43,7 @@ object Dependencies {
     "io.chrisdavenport" %% "log4cats-core"   % Log4CatsVersion
   )
 
-  val dockerTest = List(
-    "com.github.docker-java" % "docker-java"                       % "3.2.5",
-    "com.github.docker-java" % "docker-java-transport-httpclient5" % "3.2.5"
-  )
+  val dockerTest = List("pt.porchgeese" %% "docker4s-core" % docke4sVersion)
 
   val doobie = List(
     "org.tpolecat" %% "doobie-core"      % "0.9.0",

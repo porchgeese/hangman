@@ -8,7 +8,7 @@ import org.http4s.circe._
 import org.http4s.dsl._
 import org.http4s.{EntityDecoder, EntityEncoder, HttpRoutes}
 
-class MetaMicroService[F[_]: Monad: Defer: Sync](hc: F[Map[String, Map[String, Health]]]) extends Http4sDsl[F] {
+class MetaRoutes[F[_]: Monad: Defer: Sync](hc: F[Map[String, Map[String, Health]]]) extends Http4sDsl[F] {
 
   implicit val ec: EntityEncoder[F, Map[String, Map[String, Health]]] = jsonEncoderOf[F, Map[String, Map[String, Health]]]
 

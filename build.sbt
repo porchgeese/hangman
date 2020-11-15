@@ -6,6 +6,8 @@ ThisBuild / scalaVersion := "2.13.3"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "pt.porchgeese"
 ThisBuild / organizationName := "example"
+ThisBuild / resolvers += "scala4s snapshot repo" at "http://oss.sonatype.org/content/repositories/snapshots"
+
 ThisBuild / scalacOptions := Seq(
   "-Xfatal-warnings",
   "-unchecked",

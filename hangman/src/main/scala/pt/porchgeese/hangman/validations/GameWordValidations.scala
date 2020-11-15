@@ -27,6 +27,7 @@ object GameWordValidations {
       case WordCharacter(_)       => Valid(())
     }
   def wordIsNotEmpty(c: List[Char]): Validated[GameWordValidations, NonEmptyList[Char]] = Validations.isNotEmpty(c).leftMap(_ => IsEmpty)
+
   def hasNoInvalidCharacters(allowedWordSymbols: Set[WordCharacter], allowedWhiteSpaceSymbols: Set[WhiteSpaceCharacter])(
       word: NonEmptyList[Char]
   ): Validated[NonEmptyList[GameWordValidations], NonEmptyList[GameCharacter]] =

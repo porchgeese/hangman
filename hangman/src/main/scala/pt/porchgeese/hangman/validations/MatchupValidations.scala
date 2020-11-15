@@ -8,6 +8,4 @@ object MatchupValidations {
     Validated.fromOption(m.player2, ()).map(p => m.player -> p)
   def matchupIsReady(m: Matchup): Validated[Unit, Unit] =
     Validated.cond(m.state == MatchupState.Paired, (), ())
-  def playerMatches(p: PlayerId, m: Matchup): Validated[Unit, Unit] =
-    Validated.cond(m.player == p || m.player2.contains(p), (), ())
 }

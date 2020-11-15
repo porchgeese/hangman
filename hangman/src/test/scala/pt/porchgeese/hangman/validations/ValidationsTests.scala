@@ -1,4 +1,4 @@
-package pt.porchgeese.hangman
+package pt.porchgeese.hangman.validations
 
 import java.util.UUID
 
@@ -6,9 +6,9 @@ import cats.data.NonEmptyList
 import cats.data.Validated.{Invalid, Valid}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import pt.porchgeese.hangman.domain.{GameId, GameWord, GameWordId, Matchup, MatchupId, MatchupState, PlayerId, WhiteSpaceCharacter, WordCharacter}
-import pt.porchgeese.hangman.validations.GameWordValidations.{BeginsWithWhitespace, EndsWithWhitespace, HasMultiWhiteSpaceContiguous, InvalidCharacter, IsEmpty}
-import pt.porchgeese.hangman.validations.{GameWordValidations, MatchupValidations, Validations}
+import pt.porchgeese.hangman.domain._
+import pt.porchgeese.hangman.validations.GameWordValidations._
+import pt.porchgeese.hangman.validations.GuessValidations.{GuessIsNotUnique, InvalidChar, WhitespaceIsNotAValidGuess, WordIsComplete}
 
 class ValidationsTests extends AnyFreeSpec with Matchers {
   val (uuid01, uuid02, uuid03, uuid04, uuid05) = (
@@ -35,7 +35,15 @@ class ValidationsTests extends AnyFreeSpec with Matchers {
       Validations.isNotEmpty(List(1)) shouldBe Valid(NonEmptyList.one(1))
     }
   }
-
+  ".matchupExists" - {
+    "returns invalid if the matchup is undefined" in {
+      Validations.matchupExists(None) shouldBe Invalid(())
+    }
+    "returns valid if a matchup is defined" in {
+      val matchup = Matchup(MatchupId(uuid01), PlayerId(uuid02), MatchupState.Playing, None, 0L)
+      Validations.matchupExists(Some(matchup)) shouldBe Valid(matchup)
+    }
+  }
   ".matchupHas2Players" - {
     "returns invalid if the second player is not defined" in {
       MatchupValidations.matchupHas2Players(Matchup(MatchupId(uuid01), PlayerId(uuid02), MatchupState.Paired, None, 0L)) shouldBe Invalid(())
@@ -61,12 +69,12 @@ class ValidationsTests extends AnyFreeSpec with Matchers {
     val matchup = Matchup(MatchupId(uuid01), PlayerId(uuid02), MatchupState.Cancelled, Some(PlayerId(uuid03)), 0L)
 
     "returns valid if the player is part of the matchup" in {
-      MatchupValidations.playerMatches(PlayerId(uuid02), matchup) shouldBe Valid(())
-      MatchupValidations.playerMatches(PlayerId(uuid03), matchup) shouldBe Valid(())
+      Validations.playerMatches(PlayerId(uuid02), matchup) shouldBe Valid(())
+      Validations.playerMatches(PlayerId(uuid03), matchup) shouldBe Valid(())
     }
     "return valid if otherwise" in {
       val matchup = Matchup(MatchupId(uuid01), PlayerId(uuid02), MatchupState.Cancelled, Some(PlayerId(uuid03)), 0L)
-      MatchupValidations.playerMatches(PlayerId(uuid05), matchup) shouldBe Invalid(())
+      Validations.playerMatches(PlayerId(uuid05), matchup) shouldBe Invalid(())
 
     }
   }
@@ -142,4 +150,42 @@ class ValidationsTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  ".guessIsUnique" - {
+    "returns valid if a guess is not present in the list of guesses" in {
+      val guess = Guess(GuessId(uuid01), 'c', GameId(uuid02), PlayerId(uuid03), 0L)
+      GuessValidations.guessIsUnique(List(guess, guess.copy(letter = 'a')), 'g') shouldBe Valid(())
+    }
+
+    "returns invalid if a guess is not present in the list of guesses" in {
+      val guess = Guess(GuessId(uuid01), 'c', GameId(uuid02), PlayerId(uuid03), 0L)
+      GuessValidations.guessIsUnique(List(guess, guess.copy(letter = 'a')), 'a') shouldBe Invalid(GuessIsNotUnique)
+    }
+  }
+  ".guessIsValid" - {
+    val allowedWC = Set(WordCharacter('a'), WordCharacter('b'))
+    val allowedWS = Set(WhiteSpaceCharacter(' '))
+    "returns valid if a guess is not present in the list of symbols" in {
+      GuessValidations.guessIsValid(allowedWC, allowedWS)('a') shouldBe Valid(())
+    }
+
+    "returns invalid if a guess is not present in the list of characters" in {
+      GuessValidations.guessIsValid(allowedWC, allowedWS)('@') shouldBe Invalid(InvalidChar)
+    }
+
+    "returns invalid if a guess is a white space char" in {
+      GuessValidations.guessIsValid(allowedWC, allowedWS)(' ') shouldBe Invalid(WhitespaceIsNotAValidGuess)
+    }
+  }
+
+  ".wordIsComplete" - {
+    val guess01  = Guess(GuessId(uuid01), 'c', GameId(uuid02), PlayerId(uuid03), 0L)
+    val guess02  = guess01.copy(letter = 'a')
+    val gameWord = GameWord(GameWordId(uuid03), GameId(uuid02), PlayerId(uuid03), "cacacacaaaac", 0L)
+    "should return valid if the word is not yet completed" in {
+      GuessValidations.wordIsComplete(List(guess01), gameWord) shouldBe Valid(())
+    }
+    "should return invalid if the word is completed" in {
+      GuessValidations.wordIsComplete(List(guess01, guess02), gameWord) shouldBe Invalid(WordIsComplete)
+    }
+  }
 }

@@ -1,90 +1,45 @@
 package pt.porchgeese.shared.test
 
-import cats.effect.{IO, Resource}
-import com.github.dockerjava.core.DefaultDockerClientConfig
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
-import com.github.dockerjava.api.DockerClient
-import com.github.dockerjava.api.command.PullImageResultCallback
-import com.github.dockerjava.api.model.{HostConfig, ExposedPort => ClientExposedPort}
-import com.github.dockerjava.core.DockerClientImpl
+import cats.data.Ior
+import cats.effect.{Blocker, ContextShift, IO, Resource, Timer}
 import doobie.util.transactor.Transactor
 import doobie.implicits._
+import doobie.util.ExecutionContexts
+import pt.porchgeese.docker4s.Docker4SClient.ResourceDocker4SClient
+import pt.porchgeese.docker4s.implicits._
+import pt.porchgeese.docker4s.domain
+import pt.porchgeese.docker4s.domain.HealthStatus.HealthStatus
+import pt.porchgeese.docker4s.domain.{ContainerDef, ContainerDetails, EnvVar, ExposedPort, HealthCheckConfig, HealthStatus, ImageName}
+import pt.porchgeese.docker4s.healthcheck.HealthCheck
 
-import scala.jdk.CollectionConverters._
+import scala.concurrent.duration._
+
 object docker {
-  case class ContainerId(value: String) extends AnyVal
-  case class ContainerPort(port: Int)
-  case class ExposedPort(port: Int)
-  def dockerClient: Resource[IO, DockerClient] =
-    Resource
-      .make(IO.delay {
-        val config = DefaultDockerClientConfig.createDefaultConfigBuilder.build
-        val client = new ApacheDockerHttpClient.Builder()
-          .dockerHost(config.getDockerHost)
-          .sslConfig(config.getSSLConfig)
-          .build()
-        config -> client
-      }) {
-        case (_, client) => IO.delay(client.close())
-      }
-      .flatMap {
-        case (config, httpClient) =>
-          Resource.make(IO.delay(DockerClientImpl.getInstance(config, httpClient)))(client => IO.delay(client.close))
-      }
 
-  def database(dockerCli: DockerClient): Resource[IO, Map[ContainerPort, List[ExposedPort]]] =
-    startContainer(dockerCli)(
-      "postgres:9.6-alpine",
-      List("POSTGRES_PASSWORD=admin", "POSTGRES_USER=admin", "POSTGRES_DB=test"),
-      List(5432)
-    )
-
-  def dbHealthCheck(t: Transactor[IO]): IO[Unit] =
-    fs2.Stream
-      .repeatEval(
-        sql"SELECT 1".query[Unit].unique.transact(t).attempt
-      )
-      .takeWhile(_.isLeft)
-      .compile
-      .drain
-
-  def startContainer(dockerCli: DockerClient)(
-      image: String,
-      envVariables: List[String],
-      exposedPorts: List[Int]
-  ): Resource[IO, Map[ContainerPort, List[ExposedPort]]] = {
-    def removeContainer(id: ContainerId): Unit = {
-      val _ = dockerCli.killContainerCmd(id.value).exec()
-      val _ = dockerCli.removeContainerCmd(id.value).exec()
-    }
-    Resource
-      .make(
-        IO.delay {
-          val result = dockerCli.pullImageCmd(image).exec(new PullImageResultCallback())
-          result.awaitCompletion()
-          val container = dockerCli
-            .createContainerCmd(image)
-            .withEnv(envVariables: _*)
-            .withExposedPorts(exposedPorts.map(p => new ClientExposedPort(p)): _*)
-            .withHostConfig(new HostConfig().withPublishAllPorts(true))
-            .exec()
-          val containerId  = ContainerId(container.getId)
-          val shutdownHook = new Thread(() => removeContainer(containerId))
-          dockerCli.startContainerCmd(containerId.value).exec()
-          val containerDetails = dockerCli.inspectContainerCmd(containerId.value).exec()
-          val portMappings = containerDetails.getNetworkSettings.getPorts.getBindings.asScala.toList.map {
-            case (key, value) => key.getPort -> value.toList.map(_.getHostPortSpec.toInt) //TODO: should probably not do a toInt here
-          }.toMap
-          Runtime.getRuntime.addShutdownHook(shutdownHook)
-          (shutdownHook, containerId, portMappings)
-        }
-      ) {
-        case (hook, container, _) =>
-          IO.delay {
-            removeContainer(container)
-            val _ = Runtime.getRuntime.removeShutdownHook(hook)
-          }
-      }
-      .map(result => result._3.toList.map { case (k, v) => ContainerPort(k) -> v.map(ExposedPort) }.toMap)
+  def database(dockerCli: ResourceDocker4SClient[IO])(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, domain.ContainerPort] = {
+    val image   = ImageName("postgres", "9.6-alpine")
+    val envVars = List(EnvVar("POSTGRES_PASSWORD", "admin"), EnvVar("POSTGRES_USER", "admin"), EnvVar("POSTGRES_DB", "test"))
+    val ports   = List(ExposedPort(5432))
+    for {
+      _           <- Resource.liftF(dockerCli.pullImage(image))
+      containerId <- dockerCli.buildContainer(ContainerDef.simple(image, envVars, ports))
+      _           <- dockerCli.startContainer(containerId)
+      detailsOpt  <- Resource.liftF(dockerCli.getContainerDetails(containerId))
+      details     <- Resource.liftF(detailsOpt.fold[IO[ContainerDetails]](IO.raiseError(new RuntimeException("Failed to start database container.")))(IO.pure))
+      _           <- HealthCheck.evalRes[IO](dbHealthCheck, HealthCheckConfig(Ior.left(5.seconds)))
+    } yield details.exposedPorts(ports.head).head
   }
+
+  private def dbHealthCheck(implicit cs: ContextShift[IO]): IO[HealthStatus] = {
+    val transactor = Transactor.fromDriverManager[IO](
+      "org.postgresql.Driver",
+      "jdbc:postgresql://localhost:5432/test",
+      "admin",
+      "admin",
+      Blocker.liftExecutionContext(ExecutionContexts.synchronous)
+    )
+    sql"SELECT 1;".query[Int].option.transact(transactor).attempt
+      .map(x => x.fold[HealthStatus](_ => HealthStatus.Unhealthy, x => x.fold[HealthStatus](HealthStatus.Unhealthy)(_ => HealthStatus.Healthy)))
+  }
+
 }
